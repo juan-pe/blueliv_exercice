@@ -1,0 +1,4 @@
+aiohttp==0.22.5
+Django==1.8.15
+lxml==3.6.4
+requests==2.11.1
