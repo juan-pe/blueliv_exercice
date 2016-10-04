@@ -1,13 +1,16 @@
+import logging
 from datetime import datetime
 
 from django.db.models import Q
 
 from news_crawler.models import RedditUser, Submision
 
+logger = logging.getLogger(__name__)
+
 __all__ = ['process_submission', 'get_submision_title', 'get_submision_submitter',
            'get_submision_url', 'get_submision_creation_date', 'get_submision_creation_date',
            'get_submision_punctuation', 'get_submision_punctuation', 'get_submision_rank',
-           'get_submisions_comments']
+           'get_submisions_comments', 'get_comments_url', 'get_submitter_url']
 
 def process_submission(submision):
     '''
@@ -19,9 +22,12 @@ def process_submission(submision):
         - punctuation
         - creation_date
         - number_of_comments
+        - comments
+        - users
     and save them into db
     '''
     sub = {}
+    submission = None
     sub['title'] = get_submision_title(submision)
 
     if 'self' not in submision.get('class'):
@@ -34,18 +40,21 @@ def process_submission(submision):
     sub['rank'] = get_submision_rank(submision)
     sub['creation_date'] = get_submision_creation_date(submision)
     sub['number_of_comments'] = get_submisions_comments(submision)
+    sub['comments_url'] = get_comments_url(submision)
+    sub['submitter_url'] = get_submitter_url(submision)
 
     qsub = Q(submitter=sub['submitter'], title=sub['title'])
     try:
         submisions = Submision.objects.filter(qsub)
         if submisions.exists():
             submisions.update(**sub)
+            submision = submisions.first()
         else:
-            Submision.objects.create(**sub)
+            submission = Submision.objects.create(**sub)
     except Exception as e:
-        logger.debug(e)
-        loger.debug(sub)
-        loger.debug(submisions)
+        logger.exception(e)
+
+    return submision
 
 
 def get_submision_title(submision):
@@ -86,3 +95,13 @@ def get_submisions_comments(submision):
         if len(comments[0].text.split(' ')) == 2:
             return int(comments[0].text.split(' ')[0])
     return 0
+
+
+def get_comments_url(submision):
+    comments_elem = submision.cssselect('li > a[class~="comments"]')
+    return comments_elem[0].get('href') if comments_elem  else ''
+
+
+def get_submitter_url(submison):
+    submitter_url_elem = submison.cssselect('p > a[class~="author"]')
+    return submitter_url_elem[0].get('href') if submitter_url_elem else ''

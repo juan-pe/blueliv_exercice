@@ -52,6 +52,18 @@ class Submision(models.Model):
         null=True
     )
 
+    comments_url = models.URLField(
+        verbose_name=_(u'Comments URL'),
+        help_text=_(u'Comments URL of the submision'),
+        null=True
+    )
+
+    submitter_url = models.URLField(
+        verbose_name=_(u'Submitter URL'),
+        help_text=_(u'Submiter URL of the submision'),
+        null=True
+    )
+
     punctuation = models.IntegerField(
         verbose_name=_(u'Points'),
         help_text=_(u'Points of the submision')

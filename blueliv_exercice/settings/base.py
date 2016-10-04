@@ -30,6 +30,8 @@ INSTALLED_APPS = (
     'django.contrib.sessions',
 
     'news_crawler',
+    'kombu.transport.django',
+    'djcelery'
 )
 
 MIDDLEWARE_CLASSES = (
@@ -78,4 +80,11 @@ USE_TZ = False
 
 STATIC_URL = '/static/'
 
+# Scriping settings
 PYTHON_SUBREDDIT_URL = 'https://www.reddit.com/r/Python/'
+AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36'
+
+
+# Celery config
+BROKER_URL = 'django://'
+CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'

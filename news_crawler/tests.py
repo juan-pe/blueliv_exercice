@@ -85,10 +85,23 @@ class PruebaConceptoTest(TestCase):
             sub_comments = int(comments_elem[0].text.split(' ')[0])
         else:
             sub_comments = 0
-
         comments = get_submisions_comments(self.submissions[1])
 
         self.assertEqual(sub_comments, comments, msg='comments dont match')
+
+    def test_get_comments_url(self):
+        comments_elem = self.submissions[1].cssselect('li > a[class~="comments"]')
+        sub_comment_url = comments_elem[0].get('href') if comments_elem  else ''
+        comment_url = get_comments_url(self.submissions[1])
+
+        self.assertEqual(sub_comment_url, comment_url, msg='comments url dont match')
+
+    def test_get_submiter_url(self):
+        submitter_url_elem = self.submissions[1].cssselect('p > a[class~="author"]')
+        sub_submitter_url = submitter_url_elem[0].get('href') if submitter_url_elem else ''
+        submitter_url = get_submitter_url(self.submissions[1])
+
+        self.assertEqual(sub_submitter_url, submitter_url, msg='commiter url dont match')
 
 
 class TestApi(TestCase):
