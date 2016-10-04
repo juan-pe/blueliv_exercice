@@ -1,12 +1,15 @@
 import logging
-
+import json
+from collections import namedtuple
+from operator import attrgetter
 import requests
 from django.conf import settings
 from django.http.response import JsonResponse
 from lxml import html
+from django.core.serializers.json import DjangoJSONEncoder
 
 from news_crawler.utils import process_submission
-
+from news_crawler.models import Submision
 logger = logging.getLogger(__name__)
 
 
@@ -41,3 +44,87 @@ def get_submissions(request, pages):
     else:
         msg['message'] = '{} pages of submissions has been processed'.format(loop)
     return JsonResponse(msg, status=200)
+
+
+def get_top10_articles(request):
+    msg = {}
+    if request.method != 'GET':
+        msg['error_message'] = 'Invalid Method'
+        return JsonResponse(msg, status=400)
+
+    order_by = request.GET.get('order_by', 'default')
+    if order_by not in ['points', 'comments', 'default']:
+        msg['error_message'] = 'Incorrect order criteria'
+        return JsonResponse(msg, status=400)
+
+    order_criteria = _get_order_criteria(order_by)
+
+    submissions = Submision.objects.filter(
+        external_url__isnull=False,
+        discusion_url__isnull=True
+    ).order_by(order_criteria)[:10]
+
+    res = [to_json(submission) for submission in submissions]
+    return JsonResponse(res, status=200, safe=False)
+
+
+def get_top10_discussions(request):
+    msg = {}
+    if request.method != 'GET':
+        msg['error_message'] = 'Invalid Method'
+        return JsonResponse(msg, status=400)
+
+    order_by = request.GET.get('order_by', 'default')
+    if order_by not in ['points', 'comments', 'default']:
+        msg['error_message'] = 'Incorrect order criteria'
+        return JsonResponse(msg, status=400)
+
+    order_criteria = _get_order_criteria(order_by)
+
+    submissions = Submision.objects.filter(
+        external_url__isnull=True,
+        discusion_url__isnull=False
+    ).order_by(order_criteria)[:10]
+
+    res = [to_json(submission) for submission in submissions]
+    return JsonResponse(res, status=200, safe=False)
+
+
+def get_top10_all(request):
+    msg = {}
+    if request.method != 'GET':
+        msg['error_message'] = 'Invalid Method'
+        return JsonResponse(msg, status=400)
+
+    order_by = request.GET.get('order_by', 'default')
+    if order_by not in ['points', 'comments', 'default']:
+        msg['error_message'] = 'Incorrect order criteria'
+        return JsonResponse(msg, status=400)
+
+    order_criteria = _get_order_criteria(order_by)
+
+    submissions = Submision.objects.all().order_by(order_criteria)[:10]
+
+    res = [to_json(submission) for submission in submissions]
+    return JsonResponse(res, status=200, safe=False)
+
+
+def _get_order_criteria(order_by):
+    get_criteria = attrgetter(order_by)
+    OrderCriteriaTuple = namedtuple(
+        'OrderCriteriaTuple',
+        'points, comments, default'
+    )
+    order_criteria = OrderCriteriaTuple('-punctuation', '-number_of_comments', 'rank')
+
+    return get_criteria(order_criteria)
+
+
+def to_json(submission):
+    res = {}
+    for field in submission._meta.get_all_field_names():
+        if field == 'submitter':
+            res[field] = str(submission.__getattribute__(field))
+        elif field != 'comments':
+            res[field] = submission.__getattribute__(field)
+    return res
