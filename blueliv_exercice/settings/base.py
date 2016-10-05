@@ -88,3 +88,4 @@ AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_6) AppleWebKit/537.36 (KHT
 # Celery config
 BROKER_URL = 'django://'
 CELERY_RESULT_BACKEND='djcelery.backends.database:DatabaseBackend'
+TEST_RUNNER = 'djcelery.contrib.test_runner.CeleryTestSuiteRunner'

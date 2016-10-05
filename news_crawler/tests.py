@@ -12,17 +12,21 @@ from django.test import Client, TestCase
 from lxml import html
 
 from news_crawler import api
-from news_crawler.models import RedditUser, Submision
+from news_crawler.models import RedditUser, Submision, Comment
 from news_crawler.utils import *
+from news_crawler.tasks import get_and_process_comments_page, get_and_process_user_page
 
 CASSETES_DIR = os.path.join(settings.BASE_DIR, 'news_crawler/fixtures/vcr_cassettes/')
 
 
-class PruebaConceptoTest(TestCase):
+class SubmissionsUtilsTest(TestCase):
 
     def setUp(self):
-        with vcr.use_cassette(CASSETES_DIR + 'reddit_python.yaml'):
-            self.response = requests.get(settings.PYTHON_SUBREDDIT_URL, verify=False)
+        headers = {'user-agent': settings.AGENT}
+        with vcr.use_cassette(CASSETES_DIR + 'reddit_python_submissions.yaml'):
+            self.response = requests.get(settings.PYTHON_SUBREDDIT_URL,
+                                         headers=headers,
+                                         verify=False)
 
         self.assertEqual(self.response.status_code, 200)
         dom = html.fromstring(self.response.content)
@@ -94,21 +98,76 @@ class PruebaConceptoTest(TestCase):
         sub_comment_url = comments_elem[0].get('href') if comments_elem  else ''
         comment_url = get_comments_url(self.submissions[1])
 
-        self.assertEqual(sub_comment_url, comment_url, msg='comments url dont match')
+        self.assertEqual(sub_comment_url, comment_url, msg='comments url doesnt match')
 
     def test_get_submiter_url(self):
         submitter_url_elem = self.submissions[1].cssselect('p > a[class~="author"]')
         sub_submitter_url = submitter_url_elem[0].get('href') if submitter_url_elem else ''
         submitter_url = get_submitter_url(self.submissions[1])
 
-        self.assertEqual(sub_submitter_url, submitter_url, msg='commiter url dont match')
+        self.assertEqual(sub_submitter_url, submitter_url, msg='commiter url doesnt match')
+
+
+class KarmaUtilsTest(TestCase):
+
+    def setUp(self):
+        headers = {'user-agent': settings.AGENT}
+        url = 'https://www.reddit.com/user/iapitus'
+        with vcr.use_cassette(CASSETES_DIR + 'reddit_python_user.yaml'):
+            self.response = requests.get(url,
+                                         headers=headers,
+                                         verify=False)
+
+        self.assertEqual(self.response.status_code, 200)
+        self.dom = html.fromstring(self.response.content)
+
+    def test_get_user_comment_karma(self):
+        user_commment_karma_elem = self.dom.cssselect('div > span[class="karma comment-karma"]')
+        dom_user_commment_karma = int(user_commment_karma_elem[0].text) if user_commment_karma_elem else 0
+        user_commment_karma = get_user_comment_karma(self.dom)
+
+        self.assertEqual(dom_user_commment_karma, user_commment_karma, msg='user coments karma doesnt match')
+
+    def test_get_user_karma(self):
+        user_karma_elem = self.dom.cssselect('div > span[class="karma"]')
+        dom_user_karma = int(user_karma_elem[0].text) if user_karma_elem else 0
+        user_karma = get_user_karma(self.dom)
+
+        self.assertEqual(dom_user_karma, user_karma, msg='user coments karma doesnt match')
+
+
+class CommentsUtilsTest(TestCase):
+
+    def setUp(self):
+        headers = {'user-agent': settings.AGENT}
+        url = 'https://www.reddit.com/r/Python/comments/55y1v7/python_shells/'
+        with vcr.use_cassette(CASSETES_DIR + 'reddit_python_comments.yaml'):
+            self.response = requests.get(url,
+                                         headers=headers,
+                                         verify=False)
+
+        self.assertEqual(self.response.status_code, 200)
+        dom = html.fromstring(self.response.content)
+        self.comments = dom.cssselect('div[class~="comment"] > div[class="entry unvoted"]')
+
+    def test_get_and_process_comment_author(self):
+        pass
+
+    def test_get_comment_text(self):
+        pass
+
+    def test_get_comment_punctuation(self):
+        pass
+
+    def test_get_comment_creation_date(self):
+        pass
 
 
 class TestApi(TestCase):
 
     def setUp(self):
 
-        with vcr.use_cassette(CASSETES_DIR + 'reddit_python.yaml'):
+        with vcr.use_cassette(CASSETES_DIR + 'reddit_python_submissions.yaml'):
             self.response = requests.get(settings.PYTHON_SUBREDDIT_URL, verify=False)
 
         self.assertEqual(self.response.status_code, 200)
@@ -198,3 +257,24 @@ class TestApi(TestCase):
 
     def _desc_order(self, list_of_dict):
         return all(first['rank'] >= first['rank'] for first, second in zip(list_of_dict, list_of_dict[1:]))
+
+
+class TestTasks(TestCase):
+
+    def setUp(self):
+        with vcr.use_cassette(CASSETES_DIR + 'reddit_python_submissions.yaml'):
+            self.response = requests.get(settings.PYTHON_SUBREDDIT_URL, verify=False)
+
+        self.assertEqual(self.response.status_code, 200)
+        dom = html.fromstring(self.response.content)
+        submissions = dom.cssselect('#siteTable > div.thing')
+        for submission in submissions:
+            process_submission(submission)
+
+        self.submissions = Submision.objects.all()
+
+    def test_get_and_process_user_page_task(self):
+        sub = self.submissions.first()
+        res = get_and_process_user_page(sub.submitter_url, sub.submitter)
+
+        self.assertEquals(res.get('state'), 'ok')

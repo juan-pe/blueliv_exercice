@@ -3,14 +3,15 @@ from datetime import datetime
 
 from django.db.models import Q
 
-from news_crawler.models import RedditUser, Submision
+from news_crawler.models import RedditUser, Submision, Comment
 
 logger = logging.getLogger(__name__)
 
 __all__ = ['process_submission', 'get_submision_title', 'get_submision_submitter',
            'get_submision_url', 'get_submision_creation_date', 'get_submision_creation_date',
            'get_submision_punctuation', 'get_submision_punctuation', 'get_submision_rank',
-           'get_submisions_comments', 'get_comments_url', 'get_submitter_url']
+           'get_submisions_comments', 'get_comments_url', 'get_submitter_url',
+           'get_user_comment_karma', 'get_user_karma', 'process_comment']
 
 def process_submission(submision):
     '''
@@ -105,3 +106,62 @@ def get_comments_url(submision):
 def get_submitter_url(submison):
     submitter_url_elem = submison.cssselect('p > a[class~="author"]')
     return submitter_url_elem[0].get('href') if submitter_url_elem else ''
+
+
+def get_user_comment_karma(dom):
+    user_commment_karma_elem = dom.cssselect('div > span[class="karma comment-karma"]')
+    if user_commment_karma_elem:
+        karma = user_commment_karma_elem[0].text.replace(',', '')
+        return int(karma)
+    return 0
+
+
+
+def get_user_karma(dom):
+    user_karma_elem = dom.cssselect('div > span[class="karma"]')
+    if user_karma_elem:
+        karma = user_karma_elem[0].text.replace(',', '')
+        return int(karma)
+    return 0
+
+
+def process_comment(comment, submission):
+    '''
+    Function that from a python subreddit comment extract:
+        - author
+        - text
+        - punctiation
+        - creation_date
+    and save them into db
+    '''
+    com = {
+        'submission': submission
+    }
+    com['auhtor'] = get_and_process_comment_author(comment)
+    com['text'] = get_comment_text(comment)
+    com['punctiation'] = get_comment_punctuation(comment)
+    com['creation_date'] = get_comment_creation_date(comment)
+    try:
+        com_object = Comment.objects.create(**com)
+    except Exception as e:
+        com_object = None
+        logger.exception(e)
+
+    return com_object
+
+
+def get_and_process_comment_author(comment):
+    from news_crawler.tasks import get_and_process_user_page
+    pass
+
+
+def get_get_comment_text(comment):
+    pass
+
+
+def get_comment_punctuation(comment):
+    pass
+
+
+def get_comment_creation_date(comment):
+    pass
