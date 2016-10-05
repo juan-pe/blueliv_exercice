@@ -9,4 +9,4 @@ install:
 # command to run tests
 script:
   - ./manage.py migrate
-  - ./manage.py test news_crwaler
+  - ./manage.py test news_crawler
