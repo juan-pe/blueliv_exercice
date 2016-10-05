@@ -3,6 +3,10 @@ python:
   - "3.4"
   - "3.5"
 # command to install dependencies
-install: "pip install -r requirements/base.txt"
+install:
+  - "pip install -r requirements/base.txt"
+
 # command to run tests
-script: ./manage test news_crwaler
+script:
+  - ./manage.py migrate
+  - ./manage.py test news_crwaler
