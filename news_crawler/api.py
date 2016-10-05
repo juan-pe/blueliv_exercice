@@ -36,8 +36,8 @@ def get_submissions(request, pages):
         submissions = dom.cssselect('#siteTable > div.thing')
         for submission in submissions:
             sub = process_submission(submission)
-            get_and_process_user_page(sub.submitter_url, sub.submitter)
-            get_and_process_comments_page(sub.comments_url, sub)
+            get_and_process_user_page.delay(sub.submitter_url, sub.submitter)
+            get_and_process_comments_page.delay(sub.comments_url, sub)
 
         loop += 1
         if loop < int(pages):
