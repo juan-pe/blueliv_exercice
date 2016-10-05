@@ -4,7 +4,7 @@ python:
   - "3.5"
 # command to install dependencies
 install:
-  - "pip install -r requirements/base.txt"
+  - "pip install -r requirements/base.txt" --process-dependency-links
 
 # command to run tests
 script:
