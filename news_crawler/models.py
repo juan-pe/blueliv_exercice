@@ -52,6 +52,18 @@ class Submision(models.Model):
         null=True
     )
 
+    comments_url = models.URLField(
+        verbose_name=_(u'Comments URL'),
+        help_text=_(u'Comments URL of the submision'),
+        null=True
+    )
+
+    submitter_url = models.URLField(
+        verbose_name=_(u'Submitter URL'),
+        help_text=_(u'Submiter URL of the submision'),
+        null=True
+    )
+
     punctuation = models.IntegerField(
         verbose_name=_(u'Points'),
         help_text=_(u'Points of the submision')
@@ -76,7 +88,7 @@ class Submision(models.Model):
         return self.title
 
 
-class Comments(models.Model):
+class Comment(models.Model):
     author = models.ForeignKey(
         RedditUser,
         related_name='comments',
@@ -103,6 +115,7 @@ class Comments(models.Model):
     )
 
     creation_date = models.DateTimeField(
+        null=True,
         verbose_name=_(u'Creation date'),
         help_text=_(u'Creation date of the comment')
     )
