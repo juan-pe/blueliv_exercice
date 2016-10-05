@@ -1,5 +1,6 @@
 import logging
 from datetime import datetime
+from dateutil import parser
 
 from django.db.models import Q
 
@@ -11,7 +12,9 @@ __all__ = ['process_submission', 'get_submision_title', 'get_submision_submitter
            'get_submision_url', 'get_submision_creation_date', 'get_submision_creation_date',
            'get_submision_punctuation', 'get_submision_punctuation', 'get_submision_rank',
            'get_submisions_comments', 'get_comments_url', 'get_submitter_url',
-           'get_user_comment_karma', 'get_user_karma', 'process_comment']
+           'get_user_comment_karma', 'get_user_karma', 'process_comment',
+           'get_comment_author', 'get_comment_text', 'get_comment_punctuation',
+           'get_comment_creation_date']
 
 def process_submission(submision):
     '''
@@ -49,13 +52,13 @@ def process_submission(submision):
         submisions = Submision.objects.filter(qsub)
         if submisions.exists():
             submisions.update(**sub)
-            submision = submisions.first()
+            submission = submisions.first()
         else:
             submission = Submision.objects.create(**sub)
     except Exception as e:
         logger.exception(e)
 
-    return submision
+    return submission
 
 
 def get_submision_title(submision):
@@ -116,7 +119,6 @@ def get_user_comment_karma(dom):
     return 0
 
 
-
 def get_user_karma(dom):
     user_karma_elem = dom.cssselect('div > span[class="karma"]')
     if user_karma_elem:
@@ -126,6 +128,7 @@ def get_user_karma(dom):
 
 
 def process_comment(comment, submission):
+    from news_crawler.tasks import get_and_process_user_page
     '''
     Function that from a python subreddit comment extract:
         - author
@@ -137,7 +140,7 @@ def process_comment(comment, submission):
     com = {
         'submission': submission
     }
-    com['auhtor'] = get_and_process_comment_author(comment)
+    com['author'] = get_comment_author(comment)
     com['text'] = get_comment_text(comment)
     com['punctiation'] = get_comment_punctuation(comment)
     com['creation_date'] = get_comment_creation_date(comment)
@@ -147,21 +150,38 @@ def process_comment(comment, submission):
         com_object = None
         logger.exception(e)
 
+    if com['author'] and (not com['author'].post_karma or not com['author'].comment_karma):
+        url = get_submitter_url(comment)
+        get_and_process_user_page(url, com['author'])
+
     return com_object
 
 
-def get_and_process_comment_author(comment):
-    from news_crawler.tasks import get_and_process_user_page
-    pass
+def get_comment_author(comment):
+    author_elem = comment.cssselect('p > a[class~="author"]')
+    author = author_elem[0].text if author_elem else ''
+
+    return RedditUser.objects.get_or_create(name=author)[0] \
+           if author else None
 
 
-def get_get_comment_text(comment):
-    pass
+def get_comment_text(comment):
+    comment_text_elem = comment.cssselect(
+        'div[class~="usertext-body"] > div[class="md"]')
+
+    return comment_text_elem[0].text_content().strip() \
+           if comment_text_elem else ''
 
 
 def get_comment_punctuation(comment):
-    pass
+    comment_punctuation_elem = comment.cssselect(
+        'p > span[class="score unvoted"]')
+    return int(comment_punctuation_elem[0].text.split(' ')[0]) \
+           if comment_punctuation_elem else 0
 
 
 def get_comment_creation_date(comment):
-    pass
+    comment_creation_date_elem = comment.cssselect(
+        'p > time[class="live-timestamp"]')
+    return parser.parse(comment_creation_date_elem[0].get('datetime'), ignoretz=True) \
+           if comment_creation_date_elem else None

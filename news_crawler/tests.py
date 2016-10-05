@@ -6,15 +6,17 @@ from operator import itemgetter
 
 import requests
 import vcr
+from dateutil import parser
 from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.test import Client, TestCase
 from lxml import html
 
 from news_crawler import api
-from news_crawler.models import RedditUser, Submision, Comment
+from news_crawler.models import Comment, RedditUser, Submision
+from news_crawler.tasks import (get_and_process_comments_page,
+                                get_and_process_user_page)
 from news_crawler.utils import *
-from news_crawler.tasks import get_and_process_comments_page, get_and_process_user_page
 
 CASSETES_DIR = os.path.join(settings.BASE_DIR, 'news_crawler/fixtures/vcr_cassettes/')
 
@@ -123,14 +125,18 @@ class KarmaUtilsTest(TestCase):
 
     def test_get_user_comment_karma(self):
         user_commment_karma_elem = self.dom.cssselect('div > span[class="karma comment-karma"]')
-        dom_user_commment_karma = int(user_commment_karma_elem[0].text) if user_commment_karma_elem else 0
+        self.assertIsNotNone(user_commment_karma_elem)
+
+        dom_user_commment_karma = int(user_commment_karma_elem[0].text.replace(',', ''))
         user_commment_karma = get_user_comment_karma(self.dom)
 
         self.assertEqual(dom_user_commment_karma, user_commment_karma, msg='user coments karma doesnt match')
 
     def test_get_user_karma(self):
         user_karma_elem = self.dom.cssselect('div > span[class="karma"]')
-        dom_user_karma = int(user_karma_elem[0].text) if user_karma_elem else 0
+        self.assertIsNotNone(user_karma_elem)
+
+        dom_user_karma = int(user_karma_elem[0].text.replace(',', ''))
         user_karma = get_user_karma(self.dom)
 
         self.assertEqual(dom_user_karma, user_karma, msg='user coments karma doesnt match')
@@ -150,17 +156,47 @@ class CommentsUtilsTest(TestCase):
         dom = html.fromstring(self.response.content)
         self.comments = dom.cssselect('div[class~="comment"] > div[class="entry unvoted"]')
 
-    def test_get_and_process_comment_author(self):
-        pass
+    def test_get_comment_author(self):
+        comment = self.comments[1]
+        author_elem = comment.cssselect('p > a[class~="author"]')
+        self.assertIsNotNone(author_elem)
+
+        comment_author = author_elem[0].text
+        author_obj, _ = RedditUser.objects.get_or_create(name=comment_author)
+        author = get_comment_author(comment)
+        self.assertEqual(author_obj.name, author.name)
+
 
     def test_get_comment_text(self):
-        pass
+        comment = self.comments[1]
+        comment_text_elem = comment.cssselect('div[class~="usertext-body"] > div[class="md"]')
+        self.assertIsNotNone(comment_text_elem)
+
+        comment_text = comment_text_elem[0].text_content().strip()
+        text = get_comment_text(comment)
+        self.assertEqual(comment_text, text)
 
     def test_get_comment_punctuation(self):
-        pass
+        comment = self.comments[1]
+        comment_punctuation_elem = comment.cssselect('p > span[class="score unvoted"]')
+        self.assertIsNotNone(comment_punctuation_elem)
+
+        comment_punctuation = int(comment_punctuation_elem[0].text.split(' ')[0])
+        punctuation = get_comment_punctuation(comment)
+        self.assertEqual(comment_punctuation, punctuation)
+
 
     def test_get_comment_creation_date(self):
-        pass
+        comment = self.comments[1]
+        comment_creation_date_elem = comment.cssselect('p > time[class="live-timestamp"]')
+        self.assertIsNotNone(comment_creation_date_elem)
+
+        comment_creation_date = parser.parse(comment_creation_date_elem[0].get('datetime'), ignoretz=True)
+        creation_date = get_comment_creation_date(comment)
+        self.assertEqual(comment_creation_date, creation_date)
+
+    def test_process_comment(self):
+        comment = self.comments[1]
 
 
 class TestApi(TestCase):
@@ -268,6 +304,10 @@ class TestTasks(TestCase):
         self.assertEqual(self.response.status_code, 200)
         dom = html.fromstring(self.response.content)
         submissions = dom.cssselect('#siteTable > div.thing')
+
+        self.comments = dom.cssselect(
+            'div[class~="comment"] > div[class="entry unvoted"]')
+
         for submission in submissions:
             process_submission(submission)
 
@@ -276,5 +316,11 @@ class TestTasks(TestCase):
     def test_get_and_process_user_page_task(self):
         sub = self.submissions.first()
         res = get_and_process_user_page(sub.submitter_url, sub.submitter)
+
+        self.assertEquals(res.get('state'), 'ok')
+
+    def test_get_and_process_comments_page_task(self):
+        sub = self.submissions.first()
+        res = get_and_process_comments_page(sub.comments_url, sub)
 
         self.assertEquals(res.get('state'), 'ok')

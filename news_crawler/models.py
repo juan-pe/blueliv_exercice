@@ -115,6 +115,7 @@ class Comment(models.Model):
     )
 
     creation_date = models.DateTimeField(
+        null=True,
         verbose_name=_(u'Creation date'),
         help_text=_(u'Creation date of the comment')
     )

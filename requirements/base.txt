@@ -41,4 +41,4 @@ vcrpy==1.10.3
 w3lib==1.15.0
 wcwidth==0.1.7
 wrapt==1.10.8
-zope.interface==4.3.2
+python-dateutil==2.5.3
