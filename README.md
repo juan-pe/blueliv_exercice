@@ -3,6 +3,8 @@
 
 This peace of software is a news crawler of the Python subreddit website. It's recollect some attributes from posts, comments and users and stores them into a SQlite database and exposes an API to access to that data and statistics
 
+[TOC]
+
 ## Design concept
 
 ### Framework
@@ -114,7 +116,7 @@ If the request is made with other method different than GET:
             }
 
 
-+ Response 400 (application/json) 
++ Response 400 (application/json)
 If the `order_by` has a different value than `points` or `comments`
     + Body
 
@@ -178,7 +180,7 @@ If the request is made with other method different than GET:
             }
 
 
-+ Response 400 (application/json) 
++ Response 400 (application/json)
 If the `order_by` has a different value than `points` or `comments`
     + Body
 
@@ -241,7 +243,7 @@ If the request is made with other method different than GET:
             }
 
 
-+ Response 400 (application/json) 
++ Response 400 (application/json)
 If the `order_by` has a different value than `points` or `comments`
     + Body
 
@@ -292,7 +294,7 @@ If the request is made with other method different than GET:
             }
 
 
-+ Response 400 (application/json) 
++ Response 400 (application/json)
 In case that the `user` parameter hat somethig wrong or user does not exists, the method return the following body
     + Body
 
@@ -300,7 +302,7 @@ In case that the `user` parameter hat somethig wrong or user does not exists, th
                 "state" = "ko"
                 "error_message" = "User does not exist"
             }
-            
+
 ### Obtain all posts commented from a user [GET /api/v1/{user}/posts_commented]
 This method obtain all posts that a user commented. (In the set of submissions that we scanned)
 
@@ -357,7 +359,7 @@ If the request is made with other method different than GET:
             }
 
 
-+ Response 400 (application/json) 
++ Response 400 (application/json)
 In case that the `user` parameter hat somethig wrong or user does not exists, the method return the following body
     + Body
 
@@ -394,7 +396,7 @@ If the request is made with other method different than GET:
             }
 
 
-+ Response 400 (application/json) 
++ Response 400 (application/json)
 In case that the `user` parameter hat somethig wrong or user does not exists, the method return the following body
     + Body
 
@@ -468,7 +470,7 @@ If the call to the method goes fine, the response is like the following dictiona
 			            "comments": 75
 			        }
 			    ]
-			}	
+			}
 
 + Response 400 (application/json)
 If the request is made with other method different than GET:
@@ -524,7 +526,7 @@ Obtain a list of most valued users. The criteria used to determinate which user 
 
 
 + Response 200 (application/json)
-If the call to the method goes fine, the response is like the following dictionary. 
+If the call to the method goes fine, the response is like the following dictionary.
     + Body:
 
 			{
@@ -554,8 +556,10 @@ If the request is made with other method different than GET:
 ##Tests
 To be sure that everything is still working after make changes, I decide integrate Travis CI. Under this URL one can see the state of the builds (https://travis-ci.org/juan-pe/blueliv_exercice)
 
+For the unit tests, I decide use the utilities of that offer Django and the use of "cassettes" through [VCR.py](http://vcrpy.readthedocs.io/en/latest/usage.html)  to store real requests content.
+
 ## Model design
-In the application are modeled three models. One for the submissions, other for the users and the last one for the comments. 
+In the application are modeled three models. One for the submissions, other for the users and the last one for the comments.
 #### RedditUser model
 | Attributes    | Type (Django models Fields)|
 |---------      |------                      |
@@ -576,7 +580,7 @@ In the application are modeled three models. One for the submissions, other for 
 | creation_date      | DatetimeField              |
 
 #### Comment model
-| Attributes    | Type (Django models Fields)| 
+| Attributes    | Type (Django models Fields)|
 |---------      |------                      |
 | author        | ForeingKey(RedditUser)     |
 | submission    | ForeingKey(Submission)     |
@@ -589,7 +593,7 @@ This code has been tested with python3.4 and 3.5
 ### Requisits
 To run this code a  [Redis server](http://redis.io)  is required.  For a Ubuntu flavor distribution:
 ```bash
-$> sudo apt-get install redis-server 
+$> sudo apt-get install redis-server
 $> sudo service redis-server start
 ```
 
