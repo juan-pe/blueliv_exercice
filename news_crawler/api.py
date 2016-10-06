@@ -273,6 +273,7 @@ def get_top_active(request):
     res['top_valued'] = users
     return JsonResponse(res, status=200, safe=False)
 
+
 def get_top_valued(request):
     res = {}
     count = 10
@@ -289,7 +290,6 @@ def get_top_valued(request):
     res['state'] = 'ok'
     res['top_valued'] = users
     return JsonResponse(res, status=200, safe=False)
-
 
 
 def _get_order_criteria(order_by):

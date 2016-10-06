@@ -215,12 +215,15 @@ class TestApi(TestCase):
             process_submission(submission)
 
         self.client = Client()
-        self.functions = [member_name for member_name, member_type in getmembers(api) if isfunction(member_type) and 'top' in member_name]
+        self.top10_functions = [
+            member_name for member_name, member_type in getmembers(api)
+            if isfunction(member_type) and 'top10' in member_name
+        ]
 
 
     def test_get_top10_articles_discussions_all_withoutget_parameter(self):
 
-        for function in self.functions:
+        for function in self.top10_functions:
             response = self.client.get(reverse(function))
             self.assertEqual(response.status_code, 200)
 
@@ -234,15 +237,16 @@ class TestApi(TestCase):
                 elif function == 'get_top10_discussions':
                     self.assertIsNone(article['external_url'])
                     self.assertIsNotNone(article['discusion_url'])
+
     def test_get_top10_articles_discussions_all_withoutget_parameter_default_order(self):
-        for function in self.functions:
+        for function in self.top10_functions:
             response = self.client.get(reverse(function))
             articles = json.loads(response.content.decode('utf-8'))
 
             self.assertTrue(self._asc_order(articles))
 
     def test_get_top10_articles_discussions_all_point_parameter_and_order(self):
-        for function in self.functions:
+        for function in self.top10_functions:
             response = self.client.get(reverse(function), {'order_by': 'points'})
             self.assertEqual(response.status_code, 200)
 
@@ -260,7 +264,7 @@ class TestApi(TestCase):
             self.assertTrue(self._desc_order(articles))
 
     def test_get_top10_articles_discussions_all_comment_parameter_and_order(self):
-        for function in self.functions:
+        for function in self.top10_functions:
             response = self.client.get(reverse(function), {'order_by': 'comments'})
             self.assertEqual(response.status_code, 200)
 
@@ -278,12 +282,12 @@ class TestApi(TestCase):
             self.assertTrue(self._desc_order(articles))
 
     def test_get_top10_articles_discussions_all_incorrect_parameter(self):
-        for function in self.functions:
+        for function in self.top10_functions:
             response = self.client.get(reverse(function), {'order_by': 'asds%$'})
             self.assertEqual(response.status_code, 400)
 
     def test_get_top10_articles_discussions_all_incorrect_method(self):
-        for function in self.functions:
+        for function in self.top10_functions:
             response = self.client.post(reverse(function), {'order_by': 'asds%$'})
             self.assertEqual(response.status_code, 400)
 
