@@ -13,13 +13,13 @@ urlpatterns = [
     url(r'^submissions/all/top10$',
         'news_crawler.api.get_top10_all', name='get_top10_all'),
 
-    url(r'^/user/(?P<user>\w+)/posts$',
+    url(r'^user/(?P<user>\w+)/posts$',
         'news_crawler.api.get_user_posts', name='get_user_posts'),
 
-    url(r'^/user/(?P<user>\w+)/posts_commented$',
+    url(r'^user/(?P<user>\w+)/posts_commented$',
         'news_crawler.api.get_user_posts_commented', name='get_user_posts_commented'),
 
-    url(r'^/user/(?P<user>\w+)/karma$',
+    url(r'^user/(?P<user>\w+)/karma$',
         'news_crawler.api.get_user_karma', name='get_user_karma'),
 
     url(r'^statistics/submitters/top$',
@@ -28,9 +28,9 @@ urlpatterns = [
     url(r'^statistics/commenters/top$',
         'news_crawler.api.get_top_commenters', name='get_top_commenters'),
 
-    url(r'^/statistics/most_active/top$',
+    url(r'^statistics/most_active/top$',
         'news_crawler.api.get_top_active', name='get_top_active'),
 
-    url(r'^/statistics/most_valued/top10$',
+    url(r'^statistics/most_valued/top10$',
         'news_crawler.api.get_top_valued', name='get_top_valued'),
 ]

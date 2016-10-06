@@ -152,7 +152,7 @@ def process_comment(comment, submission):
 
     if com['author'] and (not com['author'].post_karma or not com['author'].comment_karma):
         url = get_submitter_url(comment)
-        get_and_process_user_page(url, com['author'])
+        get_and_process_user_page.delay(url, com['author'])
 
     return com_object
 

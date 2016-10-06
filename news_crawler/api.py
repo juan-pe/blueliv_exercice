@@ -55,8 +55,10 @@ def get_submissions(request, pages):
     if res.status_code != 200:
         msg['state'] = 'ko'
         msg['error_message'] = 'An error has ocrred: {}'.format(res.reason)
+        msg['message'] = 'I only scaned {} pages'.format(loop)
     else:
-        msg['message'] = 'submissions has been processed'
+        msg['message'] = 'All submissions has been processed'
+        msg['state'] = 'ok'
 
     msg['pages_processed'] = loop
     msg['statistics_urls'] = {
@@ -156,8 +158,8 @@ def get_user_posts(request, user):
         res['message'] = 'User does not exist'
         return JsonResponse(res, status=200)
 
-    posts = Submision.objecs.filter(submitter=user)
-    res[user.name] = to_json(posts)
+    posts = Submision.objects.filter(submitter=user)
+    res['posts'] = [to_json(post) for post in posts]
     res['state'] = 'ok'
     return JsonResponse(res, status=200, safe=False)
 
@@ -181,6 +183,7 @@ def get_user_posts_commented(request, user):
     posts = Submision.objects.filter(
         id__in=submisions_id
     )
+    res['posts'] = [to_json(post) for post in posts]
     res['state'] = 'ok'
     return JsonResponse(res, status=200, safe=False)
 
@@ -199,7 +202,7 @@ def get_user_karma(request, user):
         res['message'] = 'User does not exist'
         return JsonResponse(res, status=200)
 
-    res[user.name] = {'karma': user.post_karma}
+    res['karma'] = user.post_karma
     res['state'] = 'ok'
     return JsonResponse(res, status=200, safe=False)
 
@@ -280,7 +283,7 @@ def get_top_valued(request):
 
     users = [
         {'user': user.name, 'most_valued': user.post_karma + user.comment_karma}
-        for user in RedditUser.objects.all()
+        for user in RedditUser.objects.all() if user.post_karma and user.comment_karma
     ]
     users = sorted(users, key=itemgetter('most_valued'), reverse=True)[:count]
     res['state'] = 'ok'
