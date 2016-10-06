@@ -1,7 +1,5 @@
 from .base import *
 
-SECRET_KEY = 'v&cuz++!c$rezkdh6a1fa!ui&tt+-nl9*^_f&lho7=qsa+avir'
-
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 ALLOWED_HOSTS = []

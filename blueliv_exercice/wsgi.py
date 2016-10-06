@@ -11,6 +11,6 @@ import os
 
 from django.core.wsgi import get_wsgi_application
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "blueliv_exercice.settings.devel")
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'blueliv_exercice.settings.devel')
 
 application = get_wsgi_application()
