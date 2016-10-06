@@ -5,13 +5,13 @@ from operator import attrgetter, itemgetter
 
 import requests
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.serializers.json import DjangoJSONEncoder
 from django.core.urlresolvers import reverse
-from django.core.exceptions import ObjectDoesNotExist
 from django.http.response import JsonResponse
 from lxml import html
 
-from news_crawler.models import Submision, RedditUser, Comment
+from news_crawler.models import Comment, RedditUser, Submision
 from news_crawler.tasks import (get_and_process_comments_page,
                                 get_and_process_user_page)
 from news_crawler.utils import process_submission
@@ -26,7 +26,7 @@ def get_submissions(request, pages):
     headers = {'user-agent': settings.AGENT}
 
     if request.method != 'GET':
-        res['state'] = 'ko'
+        msg['state'] = 'ko'
         msg['error_message'] = 'Invalid Method'
         return JsonResponse(msg, status=400)
 
@@ -53,7 +53,7 @@ def get_submissions(request, pages):
                 next_link = False
 
     if res.status_code != 200:
-        res['state'] = 'ko'
+        msg['state'] = 'ko'
         msg['error_message'] = 'An error has ocrred: {}'.format(res.reason)
     else:
         msg['message'] = 'submissions has been processed'
@@ -79,7 +79,7 @@ def get_submissions(request, pages):
 def get_top10_articles(request):
     msg = {}
     if request.method != 'GET':
-        res['state'] = 'ko'
+        msg['state'] = 'ko'
         msg['error_message'] = 'Invalid Method'
         return JsonResponse(msg, status=400)
 
@@ -102,7 +102,7 @@ def get_top10_articles(request):
 def get_top10_discussions(request):
     msg = {}
     if request.method != 'GET':
-        res['state'] = 'ko'
+        msg['state'] = 'ko'
         msg['error_message'] = 'Invalid Method'
         return JsonResponse(msg, status=400)
 
@@ -125,7 +125,7 @@ def get_top10_discussions(request):
 def get_top10_all(request):
     msg = {}
     if request.method != 'GET':
-        res['state'] = 'ko'
+        msg['state'] = 'ko'
         msg['error_message'] = 'Invalid Method'
         return JsonResponse(msg, status=400)
 
@@ -184,6 +184,7 @@ def get_user_posts_commented(request, user):
     res['state'] = 'ok'
     return JsonResponse(res, status=200, safe=False)
 
+
 def get_user_karma(request, user):
     res = {}
     if request.method != 'GET':
@@ -215,7 +216,10 @@ def get_top_submitters(request):
     except:
         count = None
 
-    posts = [{'user':user.name, 'posts': user.submissions.count()} for user in RedditUser.objects.all()]
+    posts = [
+        {'user':user.name, 'posts': user.submissions.count()}
+        for user in RedditUser.objects.all()
+    ]
     posts = sorted(posts, key=itemgetter('posts'), reverse=True)[:count]
     res['state'] = 'ok'
     res['top_submiters'] = posts
@@ -234,7 +238,10 @@ def get_top_commenters(request):
     except:
         count = None
 
-    posts = [{'user': user.name, 'comments': user.comments.count()} for user in RedditUser.objects.all()]
+    posts = [
+        {'user': user.name, 'comments': user.comments.count()}
+        for user in RedditUser.objects.all()
+    ]
     posts = sorted(posts, key=itemgetter('comments'), reverse=True)[:count]
     res['state'] = 'ok'
     res['top_commenters'] = posts
@@ -258,7 +265,7 @@ def get_top_active(request):
         for user in RedditUser.objects.all()
     ]
 
-    users = sorted(user, key=itemgetter('active_criteria'), reverse=True)[:count]
+    users = sorted(users, key=itemgetter('active_criteria'), reverse=True)[:count]
     res['state'] = 'ok'
     res['top_valued'] = users
     return JsonResponse(res, status=200, safe=False)

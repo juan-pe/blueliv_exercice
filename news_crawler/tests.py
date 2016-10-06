@@ -287,7 +287,6 @@ class TestApi(TestCase):
             response = self.client.post(reverse(function), {'order_by': 'asds%$'})
             self.assertEqual(response.status_code, 400)
 
-
     def _asc_order(self, list_of_dict):
         return all(first['rank'] <= first['rank'] for first, second in zip(list_of_dict, list_of_dict[1:]))
 
